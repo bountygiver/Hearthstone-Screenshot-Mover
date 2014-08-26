@@ -46,5 +46,41 @@ namespace HSScreenshotMover.Properties {
                 this["StartAuto"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool Minimized {
+            get {
+                return ((bool)(this["Minimized"]));
+            }
+            set {
+                this["Minimized"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool MonOnLaunch {
+            get {
+                return ((bool)(this["MonOnLaunch"]));
+            }
+            set {
+                this["MonOnLaunch"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool Notify {
+            get {
+                return ((bool)(this["Notify"]));
+            }
+            set {
+                this["Notify"] = value;
+            }
+        }
     }
 }

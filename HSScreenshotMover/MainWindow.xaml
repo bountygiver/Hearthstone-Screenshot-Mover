@@ -1,8 +1,27 @@
 ﻿<Window x:Class="HSScreenshotMover.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Hearthstone Screenshot Mover" Height="350" Width="525" StateChanged="Window_StateChanged" Closing="Window_Closing" Icon="icon.png" WindowStartupLocation="CenterScreen">
+        Title="Hearthstone Screenshot Mover" Height="350" Width="525" StateChanged="Window_StateChanged" Closing="Window_Closing" Icon="icon.png" WindowStartupLocation="CenterScreen" MinWidth="300" MinHeight="300">
+    <Window.Resources>
+        <ContextMenu x:Key="ScreenshotItemMenu">
+            <MenuItem x:Name="btnMove" Tag="{Binding Mode=OneWay}" Click="btnMove_Click" IsEnabled="{Binding canMove}" Header="Move"/>
+        </ContextMenu>
+        <DataTemplate x:Key="ScreenshotItem">
+            <Border Height="Auto" Width="Auto" MinWidth="100" ContextMenuService.IsEnabled="True" Tag="{Binding Mode=OneWay}" ContextMenu="{DynamicResource ScreenshotItemMenu}">
+                <StackPanel>
+                    <TextBlock Text="{Binding FileName}"/>
+                </StackPanel>
+
+            </Border>
+        </DataTemplate>
+
+    </Window.Resources>
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
         <Grid Margin="10,10,10,0" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
@@ -12,12 +31,41 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Label Content="Path: " HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+            <Label x:Name="lblStatus" Content="Status: Inactive"></Label>
+            <StackPanel Orientation="Horizontal" Grid.Row="1">
+                <Label Content="Path: " Margin="10,10,10,0"/>
+                <Label x:Name="lblPath" Content="&lt;Not Selected&gt;" Margin="10,10,10,0"/>
+            </StackPanel>
             <Button x:Name="btnBrowse" Content="Browse" Grid.Column="1" HorizontalAlignment="Right" Margin="10,10,10,0" Grid.Row="1" VerticalAlignment="Top" Width="75" Click="btnBrowse_Click"/>
-            <Label x:Name="lblPath" Content="&lt;Not Selected&gt;" Margin="10,10,10,0" Grid.Row="1" VerticalAlignment="Top"/>
+
         </Grid>
-        <Button x:Name="btnStartStop" Content="Start" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Width="75" Click="btnStartStop_Click"/>
-        <CheckBox x:Name="chkAutoStart" Content="Run at Windows start" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Checked="chkAutoStart_Checked" Unchecked="chkAutoStart_Unchecked"/>
+        <Button x:Name="btnStartStop" Content="Start" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Width="75" Click="btnStartStop_Click" Grid.Row="2"/>
+        <TabControl HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Grid.Row="2">
+            <TabItem Header="Options">
+                <Grid Background="#FFE5E5E5">
+                    <StackPanel>
+                        <CheckBox x:Name="chkAutoStart" Content="Run at Windows start" Checked="chkAutoStart_Checked" Unchecked="chkAutoStart_Unchecked"/>
+                        <CheckBox x:Name="chkNotify" Content="Notify on screenshot move"/>
+                        <CheckBox x:Name="chkStartAuo" Content="Autostart monitoring" Checked="chkStartAuo_Checked" Unchecked="chkStartAuo_Unchecked"/>
+                        <CheckBox x:Name="chkStartMin" Content="Start minimized" Checked="chkStartMin_Checked" Unchecked="chkStartMin_Unchecked" IsEnabled="false"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <Grid Margin="10" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <ListBox Margin="0,0,5,0" Grid.Row="1" ItemsSource="{Binding Moved}" SelectionMode="Single" ItemTemplate="{DynamicResource ScreenshotItem}" MouseDoubleClick="ListBox_MouseDoubleClick"/>
+            <ListBox Grid.Column="1" Grid.Row="1" Margin="5,0,0,0" ItemsSource="{Binding Unmoved}" SelectionMode="Single" ItemTemplate="{DynamicResource ScreenshotItem}" MouseDoubleClick="ListBox_MouseDoubleClick"/>
+            <Label Content="Files moved:" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+            <Label Content="Files Not Moved:" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        </Grid>
 
     </Grid>
 </Window>

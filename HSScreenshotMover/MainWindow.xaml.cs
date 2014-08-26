@@ -27,6 +27,8 @@ namespace HSScreenshotMover
         public FileSystemWatcher fileWatcher;
         public string pathAsString, path;
 
+        public ScreenshotList screenshots;
+
         public string DESKTOP = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
         System.Windows.Forms.NotifyIcon ni;
@@ -44,10 +46,12 @@ namespace HSScreenshotMover
                 if (value)
                 {
                     btnStartStop.Content = "Stop";
+                    lblStatus.Content = "Status: Active";
                 }
                 else
                 {
                     btnStartStop.Content = "Start";
+                    lblStatus.Content = "Status: Inactive";
                 }
             }
         }
@@ -64,6 +68,10 @@ namespace HSScreenshotMover
             lblPath.Content = pathAsString;
 
             chkAutoStart.IsChecked = Settings.StartAuto;
+            chkNotify.IsChecked = Settings.Notify;
+
+            screenshots = new ScreenshotList();
+            this.DataContext = screenshots;
 
             fileWatcher.Path = DESKTOP;
             fileWatcher.NotifyFilter = NotifyFilters.FileName;
@@ -97,32 +105,48 @@ namespace HSScreenshotMover
                 };
 
 
-            try
+            if (Settings.MonOnLaunch)
             {
-                path = System.IO.Path.GetFullPath(pathAsString);
-                isMonitoring = true;
-            }
-            catch
-            {
+                try
+                {
+                    path = System.IO.Path.GetFullPath(pathAsString);
+                    isMonitoring = true;
+                    chkStartAuo.IsChecked = chkStartMin.IsEnabled = true;
+                }
+                catch
+                {
 
+                }
+            }
+
+            if (Settings.Minimized)
+            {
+                chkStartMin.IsChecked = true;
+                ni.ShowBalloonTip(500, "Hearthstone Screenshot mover", "The app has been started and running on background", System.Windows.Forms.ToolTipIcon.Info);
+                this.Hide();
             }
         }
 
         private void ScreenShotMade(object sender, FileSystemEventArgs e)
         {
             Console.WriteLine("Screenshot detected!");
-            if (isMonitoring)
+            this.Dispatcher.Invoke(delegate
             {
-                Console.WriteLine("Moving file... " + e.FullPath);
-                try
+                var thisfile = screenshots.AddFile(e.FullPath);
+                if (isMonitoring)
                 {
-                    System.IO.File.Move(e.FullPath, System.IO.Path.Combine(path, e.Name));
+                    Console.WriteLine("Moving file... " + e.FullPath);
+                    if (!screenshots.MoveFile(path, thisfile))
+                    {
+                        MessageBox.Show("Failed to move file! " + e.Name);
+                    }
+                    else
+                    {
+                        if (chkNotify.IsChecked == true)
+                            ni.ShowBalloonTip(500, "Screenshot moved!", e.Name, System.Windows.Forms.ToolTipIcon.Info);
+                    }
                 }
-                catch
-                {
-                    MessageBox.Show("Failed to move file! " + e.Name);
-                }
-            }
+            });
         }
 
         private void chkAutoStart_Checked(object sender, RoutedEventArgs e)
@@ -199,12 +223,18 @@ namespace HSScreenshotMover
         {
             var Settings = Properties.Settings.Default;
             Settings.Path = pathAsString;
+            Settings.Notify = (bool)chkNotify.IsChecked;
             Settings.Save();
 
-            MessageBoxResult k = MessageBox.Show(this, "You can hide this window by minimizing it, it will continue running in the background and can be restored by double clicking the tray icon.", "Are you sure you want to quit?", MessageBoxButton.YesNo);
-            if (k == MessageBoxResult.No)
+            MessageBoxResult k = MessageBox.Show(this, "You can hide this window by minimizing it, it will continue running in the background and can be restored by double clicking the tray icon. Click No to minimized the app.", "Are you sure you want to quit?", MessageBoxButton.YesNoCancel);
+            if (k != MessageBoxResult.Yes)
             {
                 e.Cancel = true;
+                if (k == MessageBoxResult.No)
+                {
+                    ni.ShowBalloonTip(500, "Hearthstone Screenshot mover", "The app is now running in the background... Double click to restore", System.Windows.Forms.ToolTipIcon.Info);
+                    this.Hide();
+                }
             }
             else
             {
@@ -221,6 +251,70 @@ namespace HSScreenshotMover
                 rkApp.DeleteValue(curAssembly.GetName().Name, false);
                 var Settings = Properties.Settings.Default;
                 Settings.StartAuto = false;
+            }
+            catch
+            {
+
+            }
+        }
+
+        private void chkStartMin_Checked(object sender, RoutedEventArgs e)
+        {
+            var Settings = Properties.Settings.Default;
+            Settings.Minimized = true;
+        }
+
+        private void chkStartAuo_Checked(object sender, RoutedEventArgs e)
+        {
+            var Settings = Properties.Settings.Default;
+            Settings.MonOnLaunch = true;
+            chkStartMin.IsEnabled = true;
+        }
+
+        private void chkStartMin_Unchecked(object sender, RoutedEventArgs e)
+        {
+            var Settings = Properties.Settings.Default;
+            Settings.Minimized = false;
+        }
+
+        private void chkStartAuo_Unchecked(object sender, RoutedEventArgs e)
+        {
+            var Settings = Properties.Settings.Default;
+            Settings.MonOnLaunch = false;
+            chkStartMin.IsChecked = chkStartMin.IsEnabled = false;
+        }
+
+        private void btnMove_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var source = ((MenuItem)sender).Tag as ScreenshotItem;
+                if (source != null)
+                {
+                    Console.WriteLine("Moving file... " + source.FileName);
+                    if (!screenshots.MoveFile(pathAsString, source))
+                    {
+                        MessageBox.Show("Failed to move file! " + source.FileName);
+                    }
+                    else
+                    {
+                        if (chkNotify.IsChecked == true)
+                            ni.ShowBalloonTip(500, "Screenshot moved!", source.FileName, System.Windows.Forms.ToolTipIcon.Info);
+                    }
+                }
+            }
+            catch
+            {
+                MessageBox.Show("Invalid item selected!");
+            }
+        }
+
+        private void ListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                var source = ((ListBox)sender).SelectedItem as ScreenshotItem;
+                System.Diagnostics.Process.Start(source.FullPath);
             }
             catch
             {
