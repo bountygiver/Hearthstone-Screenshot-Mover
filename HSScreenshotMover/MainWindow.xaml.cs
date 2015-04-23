@@ -76,7 +76,7 @@ namespace HSScreenshotMover
             fileWatcher.Path = DESKTOP;
             fileWatcher.NotifyFilter = NotifyFilters.FileName;
 
-            fileWatcher.Filter = "Hearthstone_Screenshot*.png";
+            fileWatcher.Filter = "Hearthstone*Screenshot*.png";
 
             fileWatcher.Created += ScreenShotMade;
 
@@ -190,6 +190,7 @@ namespace HSScreenshotMover
         {
             isMonitoring = false;
             var dialog = new System.Windows.Forms.FolderBrowserDialog();
+            dialog.ShowNewFolderButton = true;
 
             System.Windows.Forms.DialogResult result = dialog.ShowDialog();
 
@@ -205,7 +206,14 @@ namespace HSScreenshotMover
             }
             catch
             {
-                lblPath.Content = path = pathAsString = "";
+                if (pathAsString != "")
+                {
+                    lblPath.Content = path = pathAsString = "";
+                }
+                else
+                {
+                    lblPath.Content = pathAsString = path;
+                }
             }
         }
 
@@ -319,6 +327,35 @@ namespace HSScreenshotMover
             catch
             {
 
+            }
+        }
+
+        private void btnOpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                path = System.IO.Path.GetFullPath(pathAsString);
+                if (!System.IO.Directory.Exists(path))
+                {
+                    isMonitoring = false;
+                    path = pathAsString = "";
+                    MessageBox.Show("Directory does not exist!");
+                    return;
+                }
+                try
+                {
+                    System.Diagnostics.Process.Start(pathAsString);
+                }
+                catch
+                {
+                    MessageBox.Show("Unable to launch file explorer!");
+                }
+            }
+            catch
+            {
+                isMonitoring = false;
+                lblPath.Content = path = pathAsString = "";
+                MessageBox.Show("Invalid path specified!");
             }
         }
 
