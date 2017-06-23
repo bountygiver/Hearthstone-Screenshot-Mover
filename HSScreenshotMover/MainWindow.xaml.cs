@@ -245,26 +245,34 @@ namespace HSScreenshotMover
 
             System.Windows.Forms.DialogResult result = dialog.ShowDialog();
 
-            lblPath.Content = pathAsString = dialog.SelectedPath;
-
-            try
+            switch (result)
             {
-                if (System.IO.Path.GetFullPath(pathAsString) == System.IO.Path.GetFullPath(DESKTOP))
-                {
-                    MessageBox.Show("You must not choose your desktop as destination! Why else you are using this program in the first place?");
-                    lblPath.Content = path = pathAsString = "";
-                }
-            }
-            catch
-            {
-                if (pathAsString != "")
-                {
-                    lblPath.Content = path = pathAsString = "";
-                }
-                else
-                {
-                    lblPath.Content = pathAsString = path;
-                }
+                case System.Windows.Forms.DialogResult.OK:
+                case System.Windows.Forms.DialogResult.Yes:
+                    screenshots.Moved.Clear();
+                    lblPath.Content = pathAsString = dialog.SelectedPath;
+                    try
+                    {
+                        if (System.IO.Path.GetFullPath(pathAsString) == System.IO.Path.GetFullPath(DESKTOP))
+                        {
+                            MessageBox.Show("You must not choose your desktop as destination! Why else you are using this program in the first place?");
+                            lblPath.Content = path = pathAsString = "";
+                        }
+                    }
+                    catch
+                    {
+                        if (pathAsString != "")
+                        {
+                            lblPath.Content = path = pathAsString = "";
+                        }
+                        else
+                        {
+                            lblPath.Content = pathAsString = path;
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
         }
 
