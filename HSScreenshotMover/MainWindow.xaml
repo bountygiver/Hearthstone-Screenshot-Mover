@@ -5,6 +5,7 @@
     <Window.Resources>
         <ContextMenu x:Key="ScreenshotItemMenu">
             <MenuItem x:Name="btnMove" Tag="{Binding Mode=OneWay}" Click="btnMove_Click" IsEnabled="{Binding canMove}" Header="Move"/>
+            <MenuItem x:Name="btnRename" Tag="{Binding Mode=OneWay}" Click="btnRename_Click" Header="Rename"/>
         </ContextMenu>
         <DataTemplate x:Key="ScreenshotItem">
             <Border Height="Auto" Width="Auto" MinWidth="100" ContextMenuService.IsEnabled="True" Tag="{Binding Mode=OneWay}" ContextMenu="{DynamicResource ScreenshotItemMenu}">

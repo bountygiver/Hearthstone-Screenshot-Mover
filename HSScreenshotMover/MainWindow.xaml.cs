@@ -24,7 +24,7 @@ namespace HSScreenshotMover
     public partial class MainWindow : Window
     {
 
-        public FileSystemWatcher fileWatcher;
+        public FileSystemWatcher fileWatcher, movedFileWatcher;
         public string pathAsString, path;
 
         public ScreenshotList screenshots;
@@ -60,6 +60,7 @@ namespace HSScreenshotMover
         {
             InitializeComponent();
             fileWatcher = new FileSystemWatcher();
+            movedFileWatcher = new FileSystemWatcher();
 
             var Settings = Properties.Settings.Default;
 
@@ -76,11 +77,36 @@ namespace HSScreenshotMover
             fileWatcher.Path = DESKTOP;
             fileWatcher.NotifyFilter = NotifyFilters.FileName;
 
-            fileWatcher.Filter = "Hearthstone*Screenshot*.png";
+            fileWatcher.Filter = "*.png";
 
             fileWatcher.Created += ScreenShotMade;
+            fileWatcher.Renamed += FileWatcher_Renamed;
+            fileWatcher.Deleted += MovedFileWatcher_Deleted;
 
             fileWatcher.EnableRaisingEvents = true;
+
+            var HSFiles = System.IO.Directory.GetFiles(DESKTOP);
+            foreach (string f in HSFiles)
+            {
+                if (f.Contains("Hearthstone") && f.Contains("Screenshot") && f.EndsWith(".png"))
+                {
+                    screenshots.AddFile(f);
+                }
+            }
+
+            try
+            {
+                movedFileWatcher.Path = System.IO.Path.GetFullPath(pathAsString);
+                movedFileWatcher.NotifyFilter = NotifyFilters.FileName;
+                movedFileWatcher.Filter = "*.png";
+                movedFileWatcher.Renamed += FileWatcher_Renamed;
+                movedFileWatcher.Deleted += MovedFileWatcher_Deleted;
+                movedFileWatcher.EnableRaisingEvents = true;
+            }
+            catch
+            {
+                movedFileWatcher.EnableRaisingEvents = false;
+            }
 
 
             ni = new System.Windows.Forms.NotifyIcon();
@@ -127,26 +153,51 @@ namespace HSScreenshotMover
             }
         }
 
+        private void MovedFileWatcher_Deleted(object sender, FileSystemEventArgs e)
+        {
+            List<ScreenshotItem> affected;
+            affected = new List<ScreenshotItem>((sender == fileWatcher ? screenshots.Unmoved : screenshots.Moved).Where(f => f.FullPath == e.FullPath));
+            foreach (ScreenshotItem fe in affected)
+            {
+                Application.Current.Dispatcher.Invoke(delegate 
+                {
+                    (sender == fileWatcher ? screenshots.Unmoved : screenshots.Moved).Remove(fe);
+                });
+            }
+        }
+
+        private void FileWatcher_Renamed(object sender, RenamedEventArgs e)
+        {
+            var affected = (sender == fileWatcher ? screenshots.Unmoved : screenshots.Moved).Where(f => f.FullPath == e.OldFullPath);
+            foreach (ScreenshotItem fe in affected)
+            {
+                fe.RenameFile(e.Name, true);
+            }
+        }
+
         private void ScreenShotMade(object sender, FileSystemEventArgs e)
         {
-            Console.WriteLine("Screenshot detected!");
-            this.Dispatcher.Invoke(delegate
+            if (e.Name.Contains("Hearthstone") && e.Name.Contains("Screenshot"))
             {
-                var thisfile = screenshots.AddFile(e.FullPath);
-                if (isMonitoring)
+                Console.WriteLine("Screenshot detected!");
+                this.Dispatcher.Invoke(delegate
                 {
-                    Console.WriteLine("Moving file... " + e.FullPath);
-                    if (!screenshots.MoveFile(path, thisfile))
+                    var thisfile = screenshots.AddFile(e.FullPath);
+                    if (isMonitoring)
                     {
-                        MessageBox.Show("Failed to move file! " + e.Name);
+                        Console.WriteLine("Moving file... " + e.FullPath);
+                        if (!screenshots.MoveFile(path, thisfile))
+                        {
+                            MessageBox.Show("Failed to move file! " + e.Name);
+                        }
+                        else
+                        {
+                            if (chkNotify.IsChecked == true)
+                                ni.ShowBalloonTip(500, "Screenshot moved!", e.Name, System.Windows.Forms.ToolTipIcon.Info);
+                        }
                     }
-                    else
-                    {
-                        if (chkNotify.IsChecked == true)
-                            ni.ShowBalloonTip(500, "Screenshot moved!", e.Name, System.Windows.Forms.ToolTipIcon.Info);
-                    }
-                }
-            });
+                });
+            }
         }
 
         private void chkAutoStart_Checked(object sender, RoutedEventArgs e)
@@ -290,6 +341,37 @@ namespace HSScreenshotMover
             var Settings = Properties.Settings.Default;
             Settings.MonOnLaunch = false;
             chkStartMin.IsChecked = chkStartMin.IsEnabled = false;
+        }
+
+        private void btnRename_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var source = ((MenuItem)sender).Tag as ScreenshotItem;
+                if (source != null)
+                {
+                    RenameDialog rd = new RenameDialog();
+                    rd.InitFile(source.FileName);
+                    bool? result = rd.ShowDialog();
+                    if (result.HasValue && result.Value)
+                    {
+                        Console.WriteLine("Renaming file... " + source.FileName);
+                        if (!screenshots.RenameFile(rd.NewName, source))
+                        {
+                            MessageBox.Show("Failed to rename file! " + source.FileName);
+                        }
+                        else
+                        {
+                            if (chkNotify.IsChecked == true)
+                                ni.ShowBalloonTip(500, "Screenshot renamed!", source.FileName, System.Windows.Forms.ToolTipIcon.Info);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                MessageBox.Show("Invalid item selected!");
+            }
         }
 
         private void btnMove_Click(object sender, RoutedEventArgs e)

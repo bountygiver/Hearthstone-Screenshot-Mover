@@ -82,6 +82,35 @@ namespace HSScreenshotMover
                 return false;
             }
         }
+
+        public bool RenameFile(String newName, bool IsUpdate = false)
+        {
+            if (IsUpdate)
+            {
+                String directory = System.IO.Path.GetDirectoryName(_path);
+                String new_target = System.IO.Path.Combine(directory, newName);
+                _filename = newName;
+                _path = new_target;
+                RaisePropertyChanged("FileName");
+                return true;
+            }
+            try
+            {
+                String directory = System.IO.Path.GetDirectoryName(_path);
+                String new_target = System.IO.Path.Combine(directory, newName);
+                if (new_target == directory)
+                    return false;
+                System.IO.File.Move(_path, new_target);
+                _path = new_target;
+                _filename = newName;
+                RaisePropertyChanged("FileName");
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 
     public class ScreenshotList
@@ -114,6 +143,15 @@ namespace HSScreenshotMover
                     Moved.Add(file);
                     return true;
                 }
+            }
+            return false;
+        }
+
+        public bool RenameFile(string NewName, ScreenshotItem file)
+        {
+            if (file.RenameFile(NewName))
+            {
+                return true;
             }
             return false;
         }
